@@ -26,3 +26,6 @@ Package.resolved
 NetCrack/Resources/Generated/
 captures/
 *.pcap.tmp
+
+# CI publishes the last build result here
+ci-last-build.txt

@@ -1,0 +1,104 @@
+name: Build DMG
+
+on:
+  push:
+    branches:
+      - "**"
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  dmg:
+    name: Build unsigned DMG (macOS 14)
+    runs-on: macos-14
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          sw_vers
+          xcodebuild -version
+          xcode-select -p
+
+      - name: Build NetCrack (Release, ad-hoc signed)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project NetCrack.xcodeproj \
+            -scheme NetCrack \
+            -configuration Release \
+            -destination 'generic/platform=macOS' \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            build 2>&1 | tee build.log
+
+      - name: Package DMG
+        run: |
+          set -euo pipefail
+          APP="build/Build/Products/Release/NetCrack.app"
+          test -d "$APP" || { echo "No app product at $APP"; ls -R build/Build/Products || true; exit 1; }
+
+          # Re-sign ad-hoc so the bundle is valid on Apple Silicon even if the
+          # build settings above were overridden.
+          codesign --force --deep --sign - --timestamp=none "$APP"
+          codesign --verify --verbose=2 "$APP" || true
+
+          rm -rf dist
+          mkdir -p dist/stage
+          cp -R "$APP" dist/stage/
+          ln -s /Applications dist/stage/Applications
+
+          hdiutil create \
+            -volname "NetCrack" \
+            -srcfolder dist/stage \
+            -fs HFS+ \
+            -fsargs "-c c=64,a=16,e=16" \
+            -format UDZO \
+            -imagekey zlib-level=9 \
+            -ov "dist/NetCrack.dmg"
+
+          shasum -a 256 dist/NetCrack.dmg | tee dist/NetCrack.dmg.sha256
+          ls -lh dist/NetCrack.dmg
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NetCrack-dmg
+          path: |
+            dist/NetCrack.dmg
+            dist/NetCrack.dmg.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Attach DMG to release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/NetCrack.dmg
+            dist/NetCrack.dmg.sha256
+          body: |
+            NetCrack — unsigned/ad-hoc build.
+
+            The DMG is **not notarised** (no paid Apple Developer account).
+            On first launch macOS will refuse it: right-click the app →
+            **Open**, or run `xattr -dr com.apple.quarantine /Applications/NetCrack.app`.

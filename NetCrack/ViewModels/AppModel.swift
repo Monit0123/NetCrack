@@ -54,7 +54,11 @@ final class AppModel: ObservableObject {
     private var didStart = false
     private var cancellables: Set<AnyCancellable> = []
 
-    init(settings: SettingsStore = SettingsStore()) {
+    convenience init() {
+        self.init(settings: SettingsStore())
+    }
+
+    init(settings: SettingsStore) {
         let settings = settings
         self.settings = settings
         self.scan = ScanViewModel(settings: settings)
@@ -79,7 +83,7 @@ final class AppModel: ObservableObject {
             self?.target.updateClients(stats.clients, excludingBSSID: self?.target.accessPoint?.bssid ?? "")
         }
         crack.targetProvider = { [weak self] in self?.target.accessPoint }
-        queue.targetsProvider = { [weak self] in self?.scan.filteredNetworks ?? [] }
+        queue.targetsProvider = { [weak self] in self?.scan.sortedNetworks ?? [] }
 
         // Views observe the individual view models directly, but the sidebar
         // reads across all of them (radio state, capture dot, recovered key),

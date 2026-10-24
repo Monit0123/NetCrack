@@ -832,7 +832,7 @@ actor CaptureEngine {
         killPattern = nil
         continuation?.finish()
         continuation = nil
-        configuration = nil
+        self.configuration = nil
     }
 
     // MARK: - Plumbing

@@ -99,9 +99,9 @@ actor Scanner {
             )
         }
 
-        let name = interface.interfaceName() ?? "en0"
+        let name = interface.interfaceName ?? "en0"
         let powered = interface.powerOn()
-        let channel = interface.channel()
+        let channel = interface.wlanChannel()
         let ssid = interface.ssid()
         let bssid = interface.bssid()
         let monitor = await monitorState(interfaceName: name)
@@ -189,7 +189,7 @@ actor Scanner {
             band: band,
             security: security,
             rssi: network.rssiValue,
-            noise: network.noiseValue,
+            noise: network.noiseMeasurement,
             phy: phy,
             widthMHz: width,
             isHidden: ssid.isEmpty,

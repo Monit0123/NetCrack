@@ -210,8 +210,9 @@ final class CaptureViewModel: ObservableObject {
                 target: target,
                 channel: desiredChannel > 0 ? desiredChannel : target.channel,
                 logger: { [weak self] line in
+                    guard let self else { return }
                     Task { @MainActor in
-                        self?.append(line)
+                        self.append(line)
                     }
                 }
             )

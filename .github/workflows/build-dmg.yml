@@ -73,6 +73,28 @@ jobs:
           echo "sha256=$(cut -d' ' -f1 dist/NetCrack.dmg.sha256)" >> "$GITHUB_OUTPUT"
           echo "size=$(du -h dist/NetCrack.dmg | cut -f1)" >> "$GITHUB_OUTPUT"
 
+      # Prove the disk image is actually mountable and contains a healthy
+      # universal bundle, instead of trusting hdiutil's exit code.
+      - name: Verify DMG
+        run: |
+          set -euo pipefail
+          MNT="$(mktemp -d)"
+          hdiutil attach dist/NetCrack.dmg -nobrowse -readonly -mountpoint "$MNT" -quiet
+          trap 'hdiutil detach "$MNT" -quiet || true' EXIT
+          APP="$MNT/NetCrack.app"
+          {
+            echo "volume contents:"; ls -l "$MNT"
+            echo "architecture:"; lipo -info "$APP/Contents/MacOS/NetCrack"
+            echo "bundle size:"; du -sh "$APP"
+            echo "version: $(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist") (build $(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Contents/Info.plist"))"
+            echo "signature:"; codesign -dv --verbose=2 "$APP" 2>&1 | sed -n '1,8p'
+            codesign --verify --deep --strict "$APP" && echo "codesign --verify --deep --strict: OK"
+            file "$APP/Contents/MacOS/NetCrack"
+            echo "linked SDK: $(otool -l "$APP/Contents/MacOS/NetCrack" | grep -A3 LC_BUILD_VERSION | grep -m1 sdk | tr -s ' ')"
+            echo "highest required macOS: $(otool -l "$APP/Contents/MacOS/NetCrack" | grep -A3 LC_BUILD_VERSION | grep -m1 minos | tr -s ' ')"
+          } | tee dmg-verify.txt
+          test -x "$APP/Contents/MacOS/NetCrack"
+
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
         with:
@@ -151,6 +173,9 @@ jobs:
             echo
             echo "## Diagnostics"
             grep -nE "error:|BUILD FAILED|The following build commands failed|fatal error:|xcodebuild:" build.log 2>/dev/null | head -400
+            echo
+            echo "## DMG verification"
+            cat dmg-verify.txt 2>/dev/null | head -40
             echo
             echo "## Warnings (first 60)"
             grep -nE "warning:" build.log 2>/dev/null | head -60

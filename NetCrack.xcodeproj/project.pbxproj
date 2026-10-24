@@ -1,0 +1,475 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000000000000000000001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000029 /* AppDelegate.swift */; };
+		A10000000000000000000002 /* NetCrackApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000002A /* NetCrackApp.swift */; };
+		A10000000000000000000003 /* AccessPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000002B /* AccessPoint.swift */; };
+		A10000000000000000000004 /* AppError.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000002C /* AppError.swift */; };
+		A10000000000000000000005 /* CaptureModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000002D /* CaptureModels.swift */; };
+		A10000000000000000000006 /* CrackModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000002E /* CrackModels.swift */; };
+		A10000000000000000000007 /* Formatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000002F /* Formatters.swift */; };
+		A10000000000000000000008 /* LogLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000030 /* LogLine.swift */; };
+		A10000000000000000000009 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000031 /* SettingsStore.swift */; };
+		A1000000000000000000000A /* ToolModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000032 /* ToolModels.swift */; };
+		A1000000000000000000000B /* CaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000033 /* CaptureEngine.swift */; };
+		A1000000000000000000000C /* Converter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000034 /* Converter.swift */; };
+		A1000000000000000000000D /* Cracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000035 /* Cracker.swift */; };
+		A1000000000000000000000E /* KeychainProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000036 /* KeychainProbe.swift */; };
+		A1000000000000000000000F /* PipelineEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000037 /* PipelineEngine.swift */; };
+		A10000000000000000000010 /* ProcessRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000038 /* ProcessRunner.swift */; };
+		A10000000000000000000011 /* RootExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000039 /* RootExecutor.swift */; };
+		A10000000000000000000012 /* Scanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000003A /* Scanner.swift */; };
+		A10000000000000000000013 /* SetupManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000003B /* SetupManager.swift */; };
+		A10000000000000000000014 /* SystemState.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000003C /* SystemState.swift */; };
+		A10000000000000000000015 /* ToolLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000003D /* ToolLocator.swift */; };
+		A10000000000000000000016 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000003E /* AppModel.swift */; };
+		A10000000000000000000017 /* CaptureViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000003F /* CaptureViewModel.swift */; };
+		A10000000000000000000018 /* CrackViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000040 /* CrackViewModel.swift */; };
+		A10000000000000000000019 /* QueueViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000041 /* QueueViewModel.swift */; };
+		A1000000000000000000001A /* ScanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000042 /* ScanViewModel.swift */; };
+		A1000000000000000000001B /* SetupViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000043 /* SetupViewModel.swift */; };
+		A1000000000000000000001C /* TargetViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000044 /* TargetViewModel.swift */; };
+		A1000000000000000000001D /* CaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000045 /* CaptureView.swift */; };
+		A1000000000000000000001E /* LogConsole.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000046 /* LogConsole.swift */; };
+		A1000000000000000000001F /* StatusViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000047 /* StatusViews.swift */; };
+		A10000000000000000000020 /* CrackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000048 /* CrackView.swift */; };
+		A10000000000000000000021 /* QueueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000049 /* QueueView.swift */; };
+		A10000000000000000000022 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000004A /* RootView.swift */; };
+		A10000000000000000000023 /* ScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000004B /* ScanView.swift */; };
+		A10000000000000000000024 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000004C /* SetupView.swift */; };
+		A10000000000000000000025 /* TargetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000004D /* TargetView.swift */; };
+		A10000000000000000000026 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000004E /* Theme.swift */; };
+		B10000000000000000000027 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000004F /* Assets.xcassets */; };
+		B10000000000000000000028 /* top10k.txt in Resources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000050 /* top10k.txt */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		C10000000000000000000029 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		C1000000000000000000002A /* NetCrackApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetCrackApp.swift; sourceTree = "<group>"; };
+		C1000000000000000000002B /* AccessPoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessPoint.swift; sourceTree = "<group>"; };
+		C1000000000000000000002C /* AppError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppError.swift; sourceTree = "<group>"; };
+		C1000000000000000000002D /* CaptureModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureModels.swift; sourceTree = "<group>"; };
+		C1000000000000000000002E /* CrackModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrackModels.swift; sourceTree = "<group>"; };
+		C1000000000000000000002F /* Formatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formatters.swift; sourceTree = "<group>"; };
+		C10000000000000000000030 /* LogLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogLine.swift; sourceTree = "<group>"; };
+		C10000000000000000000031 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
+		C10000000000000000000032 /* ToolModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolModels.swift; sourceTree = "<group>"; };
+		C10000000000000000000033 /* CaptureEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureEngine.swift; sourceTree = "<group>"; };
+		C10000000000000000000034 /* Converter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Converter.swift; sourceTree = "<group>"; };
+		C10000000000000000000035 /* Cracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cracker.swift; sourceTree = "<group>"; };
+		C10000000000000000000036 /* KeychainProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainProbe.swift; sourceTree = "<group>"; };
+		C10000000000000000000037 /* PipelineEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipelineEngine.swift; sourceTree = "<group>"; };
+		C10000000000000000000038 /* ProcessRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessRunner.swift; sourceTree = "<group>"; };
+		C10000000000000000000039 /* RootExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootExecutor.swift; sourceTree = "<group>"; };
+		C1000000000000000000003A /* Scanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scanner.swift; sourceTree = "<group>"; };
+		C1000000000000000000003B /* SetupManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupManager.swift; sourceTree = "<group>"; };
+		C1000000000000000000003C /* SystemState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemState.swift; sourceTree = "<group>"; };
+		C1000000000000000000003D /* ToolLocator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolLocator.swift; sourceTree = "<group>"; };
+		C1000000000000000000003E /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		C1000000000000000000003F /* CaptureViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureViewModel.swift; sourceTree = "<group>"; };
+		C10000000000000000000040 /* CrackViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrackViewModel.swift; sourceTree = "<group>"; };
+		C10000000000000000000041 /* QueueViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueueViewModel.swift; sourceTree = "<group>"; };
+		C10000000000000000000042 /* ScanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanViewModel.swift; sourceTree = "<group>"; };
+		C10000000000000000000043 /* SetupViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupViewModel.swift; sourceTree = "<group>"; };
+		C10000000000000000000044 /* TargetViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetViewModel.swift; sourceTree = "<group>"; };
+		C10000000000000000000045 /* CaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureView.swift; sourceTree = "<group>"; };
+		C10000000000000000000046 /* LogConsole.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogConsole.swift; sourceTree = "<group>"; };
+		C10000000000000000000047 /* StatusViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusViews.swift; sourceTree = "<group>"; };
+		C10000000000000000000048 /* CrackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrackView.swift; sourceTree = "<group>"; };
+		C10000000000000000000049 /* QueueView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueueView.swift; sourceTree = "<group>"; };
+		C1000000000000000000004A /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		C1000000000000000000004B /* ScanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanView.swift; sourceTree = "<group>"; };
+		C1000000000000000000004C /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
+		C1000000000000000000004D /* TargetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetView.swift; sourceTree = "<group>"; };
+		C1000000000000000000004E /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		C1000000000000000000004F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		C10000000000000000000050 /* top10k.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = top10k.txt; sourceTree = "<group>"; };
+		C10000000000000000000051 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C10000000000000000000052 /* NetCrack.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NetCrack.entitlements; sourceTree = "<group>"; };
+		E1000000000000000000005A /* NetCrack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NetCrack.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		BB000000000000000000005E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		D10000000000000000000053 /* NetCrack */ = {
+			isa = PBXGroup;
+			children = (
+				D10000000000000000000054,
+				D10000000000000000000055,
+				D10000000000000000000056,
+				D10000000000000000000057,
+				D10000000000000000000058,
+				D10000000000000000000059,
+				E1000000000000000000005A,
+			);
+			path = NetCrack;
+			sourceTree = "<group>";
+		};
+		D10000000000000000000054 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				C10000000000000000000029 /* AppDelegate.swift */,
+				C1000000000000000000002A /* NetCrackApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		D10000000000000000000055 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				C1000000000000000000002B /* AccessPoint.swift */,
+				C1000000000000000000002C /* AppError.swift */,
+				C1000000000000000000002D /* CaptureModels.swift */,
+				C1000000000000000000002E /* CrackModels.swift */,
+				C1000000000000000000002F /* Formatters.swift */,
+				C10000000000000000000030 /* LogLine.swift */,
+				C10000000000000000000031 /* SettingsStore.swift */,
+				C10000000000000000000032 /* ToolModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		D10000000000000000000056 /* Backend */ = {
+			isa = PBXGroup;
+			children = (
+				C10000000000000000000033 /* CaptureEngine.swift */,
+				C10000000000000000000034 /* Converter.swift */,
+				C10000000000000000000035 /* Cracker.swift */,
+				C10000000000000000000036 /* KeychainProbe.swift */,
+				C10000000000000000000037 /* PipelineEngine.swift */,
+				C10000000000000000000038 /* ProcessRunner.swift */,
+				C10000000000000000000039 /* RootExecutor.swift */,
+				C1000000000000000000003A /* Scanner.swift */,
+				C1000000000000000000003B /* SetupManager.swift */,
+				C1000000000000000000003C /* SystemState.swift */,
+				C1000000000000000000003D /* ToolLocator.swift */,
+			);
+			path = Backend;
+			sourceTree = "<group>";
+		};
+		D10000000000000000000057 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				C1000000000000000000003E /* AppModel.swift */,
+				C1000000000000000000003F /* CaptureViewModel.swift */,
+				C10000000000000000000040 /* CrackViewModel.swift */,
+				C10000000000000000000041 /* QueueViewModel.swift */,
+				C10000000000000000000042 /* ScanViewModel.swift */,
+				C10000000000000000000043 /* SetupViewModel.swift */,
+				C10000000000000000000044 /* TargetViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		D10000000000000000000058 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				D10000000000000000000066 /* Components */,
+				C10000000000000000000045 /* CaptureView.swift */,
+				C10000000000000000000048 /* CrackView.swift */,
+				C10000000000000000000049 /* QueueView.swift */,
+				C1000000000000000000004A /* RootView.swift */,
+				C1000000000000000000004B /* ScanView.swift */,
+				C1000000000000000000004C /* SetupView.swift */,
+				C1000000000000000000004D /* TargetView.swift */,
+				C1000000000000000000004E /* Theme.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		D10000000000000000000066 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				C10000000000000000000046 /* LogConsole.swift */,
+				C10000000000000000000047 /* StatusViews.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		D10000000000000000000059 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				C10000000000000000000051 /* Info.plist */,
+				C10000000000000000000052 /* NetCrack.entitlements */,
+				C10000000000000000000050 /* top10k.txt */,
+				C1000000000000000000004F /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		F1000000000000000000005B /* NetCrack */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CB0000000000000000000061 /* Build configuration list for PBXNativeTarget "NetCrack" */;
+			buildPhases = (
+				BA000000000000000000005D /* Sources */,
+				BB000000000000000000005E /* Frameworks */,
+				BC000000000000000000005F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = NetCrack;
+			productName = NetCrack;
+			productReference = E1000000000000000000005A /* NetCrack.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AA000000000000000000005C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					F1000000000000000000005B = {
+						CreatedOnToolsVersion = 16.0;
+					};
+				};
+			};
+			buildConfigurationList = CA0000000000000000000060 /* Build configuration list for PBXProject "NetCrack" */;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = D10000000000000000000053;
+			minimizedProjectReferenceProxies = 1;
+			productRefGroup = D10000000000000000000053 /* NetCrack */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F1000000000000000000005B /* NetCrack */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		BC000000000000000000005F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B10000000000000000000027 /* Assets.xcassets in Resources */,
+				B10000000000000000000028 /* top10k.txt in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		BA000000000000000000005D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000001 /* AppDelegate.swift in Sources */,
+				A10000000000000000000002 /* NetCrackApp.swift in Sources */,
+				A10000000000000000000003 /* AccessPoint.swift in Sources */,
+				A10000000000000000000004 /* AppError.swift in Sources */,
+				A10000000000000000000005 /* CaptureModels.swift in Sources */,
+				A10000000000000000000006 /* CrackModels.swift in Sources */,
+				A10000000000000000000007 /* Formatters.swift in Sources */,
+				A10000000000000000000008 /* LogLine.swift in Sources */,
+				A10000000000000000000009 /* SettingsStore.swift in Sources */,
+				A1000000000000000000000A /* ToolModels.swift in Sources */,
+				A1000000000000000000000B /* CaptureEngine.swift in Sources */,
+				A1000000000000000000000C /* Converter.swift in Sources */,
+				A1000000000000000000000D /* Cracker.swift in Sources */,
+				A1000000000000000000000E /* KeychainProbe.swift in Sources */,
+				A1000000000000000000000F /* PipelineEngine.swift in Sources */,
+				A10000000000000000000010 /* ProcessRunner.swift in Sources */,
+				A10000000000000000000011 /* RootExecutor.swift in Sources */,
+				A10000000000000000000012 /* Scanner.swift in Sources */,
+				A10000000000000000000013 /* SetupManager.swift in Sources */,
+				A10000000000000000000014 /* SystemState.swift in Sources */,
+				A10000000000000000000015 /* ToolLocator.swift in Sources */,
+				A10000000000000000000016 /* AppModel.swift in Sources */,
+				A10000000000000000000017 /* CaptureViewModel.swift in Sources */,
+				A10000000000000000000018 /* CrackViewModel.swift in Sources */,
+				A10000000000000000000019 /* QueueViewModel.swift in Sources */,
+				A1000000000000000000001A /* ScanViewModel.swift in Sources */,
+				A1000000000000000000001B /* SetupViewModel.swift in Sources */,
+				A1000000000000000000001C /* TargetViewModel.swift in Sources */,
+				A1000000000000000000001D /* CaptureView.swift in Sources */,
+				A1000000000000000000001E /* LogConsole.swift in Sources */,
+				A1000000000000000000001F /* StatusViews.swift in Sources */,
+				A10000000000000000000020 /* CrackView.swift in Sources */,
+				A10000000000000000000021 /* QueueView.swift in Sources */,
+				A10000000000000000000022 /* RootView.swift in Sources */,
+				A10000000000000000000023 /* ScanView.swift in Sources */,
+				A10000000000000000000024 /* SetupView.swift in Sources */,
+				A10000000000000000000025 /* TargetView.swift in Sources */,
+				A10000000000000000000026 /* Theme.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		DA0000000000000000000062 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				SDKROOT = macosx;
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		DB0000000000000000000063 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				SDKROOT = macosx;
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		DC0000000000000000000064 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = NetCrack/Resources/NetCrack.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = NetCrack/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.netcrack.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		DD0000000000000000000065 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = NetCrack/Resources/NetCrack.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = NetCrack/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.netcrack.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		CA0000000000000000000060 /* Build configuration list for PBXProject "NetCrack" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DA0000000000000000000062 /* Debug */,
+				DB0000000000000000000063 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CB0000000000000000000061 /* Build configuration list for PBXNativeTarget "NetCrack" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DC0000000000000000000064 /* Debug */,
+				DD0000000000000000000065 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = AA000000000000000000005C /* Project object */;
+}

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  NetCrack is deliberately NOT sandboxed.
+
+	  It drives system binaries (tcpdump, hashcat, aircrack-ng, security,
+	  osascript) and needs to read pcaps that root wrote into the user's
+	  Library folder. A sandboxed app cannot exec arbitrary Homebrew
+	  binaries or hand root-owned files around, and there is no App Store
+	  path for a tool like this. Signing is therefore "Sign to Run Locally"
+	  with no paid developer account required.
+	-->
+	<key>com.apple.security.app-sandbox</key>
+	<false/>
+	<!-- Hardened runtime is off in the Debug/Release configurations so an
+	     ad-hoc signed build can still exec Homebrew helpers. If you turn the
+	     hardened runtime on, add com.apple.security.cs.allow-unsigned-executable-memory
+	     and com.apple.security.cs.disable-library-validation. -->
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
+</dict>
+</plist>

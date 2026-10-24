@@ -43,6 +43,7 @@ jobs:
             build 2>&1 | tee build.log
 
       - name: Package DMG
+        id: package
         run: |
           set -euo pipefail
           APP="build/Build/Products/Release/NetCrack.app"
@@ -69,6 +70,8 @@ jobs:
 
           shasum -a 256 dist/NetCrack.dmg | tee dist/NetCrack.dmg.sha256
           ls -lh dist/NetCrack.dmg
+          echo "sha256=$(cut -d' ' -f1 dist/NetCrack.dmg.sha256)" >> "$GITHUB_OUTPUT"
+          echo "size=$(du -h dist/NetCrack.dmg | cut -f1)" >> "$GITHUB_OUTPUT"
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
@@ -88,6 +91,46 @@ jobs:
           path: build.log
           if-no-files-found: ignore
           retention-days: 7
+
+      # Tagging v* publishes the DMG as a release asset. GitHub Releases keep the
+      # file downloadable long after the 30-day artifact expiry.
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: NetCrack ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: |
+            dist/NetCrack.dmg
+            dist/NetCrack.dmg.sha256
+          body: |
+            NetCrack ${{ github.ref_name }} — unsigned, ad-hoc signed macOS build.
+
+            | | |
+            |---|---|
+            | File | `NetCrack.dmg` (${{ steps.package.outputs.size }}) |
+            | SHA-256 | `${{ steps.package.outputs.sha256 }}` |
+            | Universal | Apple Silicon + Intel (`arm64`, `x86_64`) |
+            | Minimum macOS | 14.0 |
+            | Built by | Xcode on the GitHub Actions `macos-14` runner |
+
+            **First launch.** The app is not notarised, so Gatekeeper blocks the
+            first double-click. Either right-click the app → **Open** → **Open**,
+            or go to **System Settings → Privacy & Security** and click
+            **Open Anyway** next to NetCrack. If the app was copied out of a
+            downloaded DMG and still refuses, clear the quarantine flag:
+
+            ```sh
+            xattr -dr com.apple.quarantine /Applications/NetCrack.app
+            open /Applications/NetCrack.app
+            ```
+
+            Verify the download with `shasum -a 256 NetCrack.dmg`.
+
+            NetCrack only drives the tools you install yourself (`hashcat`,
+            `hcxtools`, `aircrack-ng`). Use it solely on networks you own or are
+            authorised to test.
 
       # Artifact/log downloads are not reachable from every environment, so the
       # result of the build is also pushed to a dedicated branch. Read it with

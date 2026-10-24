@@ -32,6 +32,31 @@ into hashes, **hashcat** for cracking, **aircrack-ng** for deauth/WPS/WEP and
 
 ---
 
+## Download a prebuilt DMG (no Xcode needed)
+
+The repo builds the app on GitHub's macOS runners and publishes a universal
+(Apple Silicon + Intel) disk image, so you do not need a developer account:
+
+**<https://github.com/Monit0123/NetCrack/releases/latest>** → `NetCrack.dmg`
+
+1. Open the DMG and drag **NetCrack** into *Applications*.
+2. The build is ad-hoc signed and **not notarised**, so Gatekeeper blocks the
+   first launch. Right-click the app → **Open** → **Open**, or use
+   **System Settings → Privacy & Security → Open Anyway**.
+3. If macOS still refuses (common on macOS 15+ for quarantined downloads):
+
+   ```bash
+   xattr -dr com.apple.quarantine /Applications/NetCrack.app
+   open /Applications/NetCrack.app
+   ```
+
+The same page carries `NetCrack.dmg.sha256`; check it with
+`shasum -a 256 NetCrack.dmg`. Every push also uploads the DMG as a workflow
+artifact (Actions → *Build DMG* → *NetCrack-dmg*), and `Scripts/make-dmg.sh`
+produces the identical layout locally.
+
+---
+
 ## Requirements
 
 - macOS **14 Sonoma** … **26 Tahoe** (deployment target 14.0), Apple Silicon or Intel.

@@ -107,30 +107,22 @@ jobs:
             echo "runner:   $(sw_vers -productVersion) / $(xcodebuild -version | head -1)"
             echo
             echo "## Diagnostics"
-            grep -nE "error:|BUILD FAILED|The following build commands failed|fatal error:" build.log 2>/dev/null | head -400
+            grep -nE "error:|BUILD FAILED|The following build commands failed|fatal error:|xcodebuild:" build.log 2>/dev/null | head -400
             echo
             echo "## Warnings (first 60)"
             grep -nE "warning:" build.log 2>/dev/null | head -60
+            echo
+            echo "## Tail of the build log"
+            tail -120 build.log 2>/dev/null
           } > ci-last-build.txt
 
           git config user.name "netcrack-ci"
           git config user.email "ci@users.noreply.github.com"
-          git fetch origin 'refs/heads/*:refs/remotes/origin/*' >/dev/null 2>&1
-          git checkout -B ci/build-log
+          # An orphan branch: pushing workflow files with the default token is
+          # refused, so the log branch must contain nothing but the log.
+          git checkout --orphan ci/build-log
+          git rm -rf --cached . >/dev/null 2>&1
+          rm -rf .github NetCrack NetCrack.xcodeproj Scripts Samples build dist >/dev/null 2>&1
           git add -f ci-last-build.txt
           git commit -m "ci: build $RESULT ($GITHUB_RUN_ID)" --no-verify || true
-          git push --force origin ci/build-log || echo "could not push ci/build-log"
-
-      - name: Attach DMG to release (tags only)
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            dist/NetCrack.dmg
-            dist/NetCrack.dmg.sha256
-          body: |
-            NetCrack — unsigned/ad-hoc build.
-
-            The DMG is **not notarised** (no paid Apple Developer account).
-            On first launch macOS will refuse it: right-click the app →
-            **Open**, or run `xattr -dr com.apple.quarantine /Applications/NetCrack.app`.
+          git push --force origin ci/build-log 2>&1 | tail -5

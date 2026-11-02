@@ -1,0 +1,196 @@
+name: Build DMG
+
+on:
+  push:
+    branches:
+      - "**"
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  dmg:
+    name: Build unsigned DMG (macOS 14)
+    runs-on: macos-14
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          sw_vers
+          xcodebuild -version
+          xcode-select -p
+
+      - name: Build NetCrack (Release, ad-hoc signed)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project NetCrack.xcodeproj \
+            -scheme NetCrack \
+            -configuration Release \
+            -destination 'generic/platform=macOS' \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            build 2>&1 | tee build.log
+
+      - name: Package DMG
+        id: package
+        run: |
+          set -euo pipefail
+          APP="build/Build/Products/Release/NetCrack.app"
+          test -d "$APP" || { echo "No app product at $APP"; ls -R build/Build/Products || true; exit 1; }
+
+          # Re-sign ad-hoc so the bundle is valid on Apple Silicon even if the
+          # build settings above were overridden.
+          codesign --force --deep --sign - --timestamp=none "$APP"
+          codesign --verify --verbose=2 "$APP" || true
+
+          rm -rf dist
+          mkdir -p dist/stage
+          cp -R "$APP" dist/stage/
+          ln -s /Applications dist/stage/Applications
+
+          hdiutil create \
+            -volname "NetCrack" \
+            -srcfolder dist/stage \
+            -fs HFS+ \
+            -fsargs "-c c=64,a=16,e=16" \
+            -format UDZO \
+            -imagekey zlib-level=9 \
+            -ov "dist/NetCrack.dmg"
+
+          shasum -a 256 dist/NetCrack.dmg | tee dist/NetCrack.dmg.sha256
+          ls -lh dist/NetCrack.dmg
+          echo "sha256=$(cut -d' ' -f1 dist/NetCrack.dmg.sha256)" >> "$GITHUB_OUTPUT"
+          echo "size=$(du -h dist/NetCrack.dmg | cut -f1)" >> "$GITHUB_OUTPUT"
+
+      # Prove the disk image is actually mountable and contains a healthy
+      # universal bundle, instead of trusting hdiutil's exit code.
+      - name: Verify DMG
+        run: |
+          set -euo pipefail
+          MNT="$(mktemp -d)"
+          hdiutil attach dist/NetCrack.dmg -nobrowse -readonly -mountpoint "$MNT" -quiet
+          trap 'hdiutil detach "$MNT" -quiet || true' EXIT
+          APP="$MNT/NetCrack.app"
+          {
+            echo "volume contents:"; ls -l "$MNT"
+            echo "architecture:"; lipo -info "$APP/Contents/MacOS/NetCrack"
+            echo "bundle size:"; du -sh "$APP"
+            echo "version: $(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist") (build $(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Contents/Info.plist"))"
+            echo "signature:"; codesign -dv --verbose=2 "$APP" 2>&1 | sed -n '1,8p'
+            codesign --verify --deep --strict "$APP" && echo "codesign --verify --deep --strict: OK"
+            file "$APP/Contents/MacOS/NetCrack"
+            echo "linked SDK: $(otool -l "$APP/Contents/MacOS/NetCrack" | grep -A3 LC_BUILD_VERSION | grep -m1 sdk | tr -s ' ')"
+            echo "highest required macOS: $(otool -l "$APP/Contents/MacOS/NetCrack" | grep -A3 LC_BUILD_VERSION | grep -m1 minos | tr -s ' ')"
+          } | tee dmg-verify.txt
+          test -x "$APP/Contents/MacOS/NetCrack"
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NetCrack-dmg
+          path: |
+            dist/NetCrack.dmg
+            dist/NetCrack.dmg.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # Tagging v* publishes the DMG as a release asset. GitHub Releases keep the
+      # file downloadable long after the 30-day artifact expiry.
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: NetCrack ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: |
+            dist/NetCrack.dmg
+            dist/NetCrack.dmg.sha256
+          body: |
+            NetCrack ${{ github.ref_name }} — unsigned, ad-hoc signed macOS build.
+
+            | | |
+            |---|---|
+            | File | `NetCrack.dmg` (${{ steps.package.outputs.size }}) |
+            | SHA-256 | `${{ steps.package.outputs.sha256 }}` |
+            | Universal | Apple Silicon + Intel (`arm64`, `x86_64`) |
+            | Minimum macOS | 14.0 |
+            | Built by | Xcode on the GitHub Actions `macos-14` runner |
+
+            **First launch.** The app is not notarised, so Gatekeeper blocks the
+            first double-click. Either right-click the app → **Open** → **Open**,
+            or go to **System Settings → Privacy & Security** and click
+            **Open Anyway** next to NetCrack. If the app was copied out of a
+            downloaded DMG and still refuses, clear the quarantine flag:
+
+            ```sh
+            xattr -dr com.apple.quarantine /Applications/NetCrack.app
+            open /Applications/NetCrack.app
+            ```
+
+            Verify the download with `shasum -a 256 NetCrack.dmg`.
+
+            NetCrack only drives the tools you install yourself (`hashcat`,
+            `hcxtools`, `aircrack-ng`). Use it solely on networks you own or are
+            authorised to test.
+
+      # Artifact/log downloads are not reachable from every environment, so the
+      # result of the build is also pushed to a dedicated branch. Read it with
+      #   git fetch origin ci/build-log && git show origin/ci/build-log:ci-last-build.txt
+      - name: Publish build result to ci/build-log
+        if: always()
+        env:
+          RESULT: ${{ job.status }}
+        run: |
+          set +e
+          {
+            echo "# NetCrack CI build"
+            echo "run:      $GITHUB_RUN_ID"
+            echo "ref:      $GITHUB_REF"
+            echo "commit:   $GITHUB_SHA"
+            echo "result:   $RESULT"
+            echo "runner:   $(sw_vers -productVersion) / $(xcodebuild -version | head -1)"
+            echo
+            echo "## Diagnostics"
+            grep -nE "error:|BUILD FAILED|The following build commands failed|fatal error:|xcodebuild:" build.log 2>/dev/null | head -400
+            echo
+            echo "## DMG verification"
+            cat dmg-verify.txt 2>/dev/null | head -40
+            echo
+            echo "## Warnings (first 60)"
+            grep -nE "warning:" build.log 2>/dev/null | head -60
+            echo
+            echo "## Tail of the build log"
+            tail -120 build.log 2>/dev/null
+          } > ci-last-build.txt
+
+          git config user.name "netcrack-ci"
+          git config user.email "ci@users.noreply.github.com"
+          # An orphan branch: pushing workflow files with the default token is
+          # refused, so the log branch must contain nothing but the log.
+          git checkout --orphan ci/build-log
+          git rm -rf --cached . >/dev/null 2>&1
+          rm -rf .github NetCrack NetCrack.xcodeproj Scripts Samples build dist >/dev/null 2>&1
+          git add -f ci-last-build.txt
+          git commit -m "ci: build $RESULT ($GITHUB_RUN_ID)" --no-verify || true
+          git push --force origin ci/build-log 2>&1 | tail -5

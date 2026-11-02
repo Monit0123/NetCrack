@@ -157,11 +157,18 @@ that authorisation for every privileged command.
 first privileged action
         │
         ▼
-osascript -e 'do shell script "…" with administrator privileges'
+osascript -e 'do shell script "… with administrator privileges'
         │            (one native macOS password dialog)
         ▼
-root-side supervisor: ~/Library/Application\ Support/NetCrack/rootsession/
-        │   daemon.sh — POSIX sh, writes an `alive` heartbeat every 2 s
+root-side launcher:  ~/Library/Application\ Support/NetCrack/rootsession/launch.sh
+        │   1. writes /Library/LaunchDaemons/com.netcrack.helper.plist and
+        │      bootstraps it — launchd owns the supervisor, so it cannot be
+        │      reaped when the authorisation that started it goes away
+        │   2. if launchd refuses (managed Mac), falls back to a detached
+        │      nohup child
+        ▼
+root-side supervisor: daemon.sh — POSIX sh, `alive` heartbeat every 2 s
+        │
         ▼
 app drops `<id>.cmd` files into the folder, reads `<id>.out` / `<id>.code`
         │
@@ -169,16 +176,24 @@ app drops `<id>.cmd` files into the folder, reads `<id>.out` / `<id>.code`
             sudo-capable Homebrew installs — all without another prompt
 ```
 
+Both attempts are logged to `rootsession/launch.log`, and the supervisor logs
+everything it runs to `rootsession/daemon.log`. If a launch fails, that log is
+what the error message quotes and what **Setup → Administrator helper → Helper
+log** shows — no guessing.
+
 Properties of that design:
 
-- **One prompt.** There is no sudoers edit, no setuid binary, no launch daemon,
-  no helper in `/Library/PrivilegedHelperTools`.
+- **One prompt.** There is no sudoers edit, no setuid binary, no helper in
+  `/Library/PrivilegedHelperTools`. The LaunchDaemon is written by the app,
+  installed by the one privileged call, and removes itself (plist and job) when
+  the supervisor exits.
 - **No password anywhere.** The password never enters NetCrack; `osascript`
   hands it to macOS's own authorisation machinery. Commands run as root, so
   no `sudo -S`, no password on a command line, nothing in shell history.
 - **Bounded lifetime.** The supervisor exits after **30 minutes idle** or
   **6 hours total**, and immediately when the app quits (it removes the
-  heartbeat, and the app also removes it on termination).
+  heartbeat, and the app also removes it on termination). On the way out it
+  deletes its own LaunchDaemon, so nothing is loaded at the next boot.
 - **User-scoped.** The session folder is `0700` and owned by you; the
   supervisor accepts commands only from files in that folder.
 - **Cancellable.** Stopping a capture writes a `<id>.kill` request (SIGINT first,
@@ -417,7 +432,7 @@ Every message below is raised by the app with the same wording.
 | *The wordlist could not be read* | Path moved/deleted | Crack → *Bundled top-10k* |
 | *No handshake yet — keep capturing* | 0 hashes in the pcap; **not an error** | Wait for a client to connect, or deauth on an external adapter |
 | *hashcat found no compute device* | Metal backend unavailable (some VMs) | Enable *Force hashcat (--force)*, or run on the host |
-| *The privileged helper did not start* | The root supervisor never heartbeated | Retry; test with `sudo tcpdump -i en0 -I` in Terminal |
+| *The privileged helper did not start* | Neither launchd nor the fallback produced a heartbeat; the message quotes the launcher's own reason | **Setup → Administrator helper** shows `launch.log` and `daemon.log`; **Copy log** puts them on the clipboard. Usual causes: a managed Mac that blocks `/Library/LaunchDaemons`, a cancelled/denied prompt, or an app copied somewhere macOS will not run a daemon from |
 | *Administrator authorisation was declined* | You pressed Cancel | Nothing was changed; retry when ready |
 | *WPS … locked* | AP locked WPS after failures | Wait, or use the PMKID path |
 | *This hashcat build does not support mode 22000* | hashcat older than 6.2.6 | `brew upgrade hashcat` |

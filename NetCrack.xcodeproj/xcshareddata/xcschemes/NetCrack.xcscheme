@@ -5,7 +5,7 @@
          <BuildActionEntry buildForTesting="YES" buildForRunning="YES" buildForProfiling="YES" buildForArchiving="YES" buildForAnalyzing="YES">
             <BuildableReference
                BuildableIdentifier="primary"
-               BlueprintIdentifier="F1000000000000000000005B"
+               BlueprintIdentifier="F1000000000000000000005F"
                BuildableName="NetCrack.app"
                BlueprintName="NetCrack"
                ReferencedContainer="container:NetCrack.xcodeproj">
@@ -21,7 +21,7 @@
       <BuildableProductRunnable runnableDebuggingMode="0">
          <BuildableReference
             BuildableIdentifier="primary"
-            BlueprintIdentifier="F1000000000000000000005B"
+            BlueprintIdentifier="F1000000000000000000005F"
             BuildableName="NetCrack.app"
             BlueprintName="NetCrack"
             ReferencedContainer="container:NetCrack.xcodeproj">
@@ -32,7 +32,7 @@
       <BuildableProductRunnable runnableDebuggingMode="0">
          <BuildableReference
             BuildableIdentifier="primary"
-            BlueprintIdentifier="F1000000000000000000005B"
+            BlueprintIdentifier="F1000000000000000000005F"
             BuildableName="NetCrack.app"
             BlueprintName="NetCrack"
             ReferencedContainer="container:NetCrack.xcodeproj">

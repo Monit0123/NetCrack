@@ -64,9 +64,11 @@ actor RootExecutor {
     /// A heartbeat older than this means the supervisor is gone.
     private static let heartbeatFreshness: TimeInterval = 8
 
-    private let runner = ProcessRunner()
     private var statusValue: Status = .needsAuthorization
     private var authorizationTask: Task<Void, Error>?
+    /// Whatever the launcher reported the last time it failed. Empty after a
+    /// successful authorisation.
+    private var lastAttempt: String = ""
 
     /// Immutable and Sendable, so the non-isolated streaming API can read it
     /// without hopping onto the actor.
@@ -109,16 +111,22 @@ actor RootExecutor {
 
     // MARK: - Authorisation
 
+    /// Installed next to the session files and executed as root.
+    private static let helperScripts = ["daemon", "launch"]
+    static let helperLabel = "com.netcrack.helper"
+    static let launchDaemonPath = "/Library/LaunchDaemons/com.netcrack.helper.plist"
+
     /// Starts the privileged supervisor if it is not already running. Safe to
     /// call concurrently: the second caller waits on the first attempt.
     func authorize() async throws {
         if isDaemonAlive() {
             statusValue = .authorized
+            lastAttempt = ""
             return
         }
 
         if RootExecutor.runningAsRoot() {
-            // Already root: no prompt, the supervisor is just a normal child.
+            // Already root: no prompt, the launcher just runs.
             try startSupervisorDirectly()
             statusValue = .authorized
             return
@@ -138,6 +146,7 @@ actor RootExecutor {
             try await task.value
             authorizationTask = nil
             statusValue = .authorized
+            lastAttempt = ""
         } catch {
             authorizationTask = nil
             let mapped: NetCrackError
@@ -147,6 +156,7 @@ actor RootExecutor {
                 mapped = .authorizationFailed(error.localizedDescription)
             }
             statusValue = .failed(mapped.errorDescription ?? "Authorisation failed.")
+            lastAttempt = Self.diagnostics(configuration: configuration)
             throw mapped
         }
     }
@@ -154,31 +164,26 @@ actor RootExecutor {
     /// Sends the one-off `osascript` prompt and waits for the heartbeat.
     private static func promptForAuthorization(configuration: Configuration) async throws {
         try prepareSessionDirectory(configuration.sessionDirectory)
-        let daemonScript = configuration.sessionDirectory.appendingPathComponent("daemon.sh")
-        try Self.daemonSource.write(to: daemonScript, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: daemonScript.path)
-
-        // Anything left over from a previous session is garbage now.
+        try installLauncher(in: configuration.sessionDirectory, configuration: configuration)
         Self.clearArtifacts(in: configuration.sessionDirectory)
 
-        let dir = configuration.sessionDirectory.path
-        let shellCommand = """
-        nohup /bin/sh \(Formatters.shellQuoted(daemonScript.path)) \(Formatters.shellQuoted(dir)) \
-        \(Int(configuration.idleTimeout)) \(Int(configuration.hardLifetime)) >/dev/null 2>&1 </dev/null &
-        """
-
+        let launcher = configuration.sessionDirectory.appendingPathComponent("launch.sh")
+        let command = launcherCommand(
+            directory: configuration.sessionDirectory,
+            launcher: launcher,
+            configuration: configuration
+        )
         let appleScript = """
-        do shell script "\(Self.appleScriptEscaped(shellCommand))" \
+        do shell script "\(Self.appleScriptEscaped(command))" \
         with administrator privileges with prompt "\(Self.appleScriptEscaped(configuration.authorizationPrompt))"
         """
 
-        let runner = ProcessRunner()
-        let result = try await runner.run(
+        let result = try await ProcessRunner().run(
             ProcessRunner.Command(
                 executable: "/usr/bin/osascript",
                 arguments: ["-e", appleScript]
             ),
-            timeout: 120
+            timeout: 180
         )
 
         guard result.exitCode == 0 else {
@@ -186,35 +191,51 @@ actor RootExecutor {
             if combined.contains("user canceled") || combined.contains("(-128)") {
                 throw NetCrackError.authorizationDenied
             }
-            throw NetCrackError.authorizationFailed(result.tail.isEmpty ? "osascript exited with \(result.exitCode)" : result.tail)
+            let detail = result.tail.isEmpty ? "osascript exited with \(result.exitCode)" : result.tail
+            throw NetCrackError.authorizationFailed(
+                "\(detail) \(Self.diagnosticSummary(configuration: configuration, attempt: result.combined))"
+            )
         }
 
-        // Wait for the supervisor's first heartbeat.
-        let heartbeat = configuration.sessionDirectory.appendingPathComponent("alive")
-        let deadline = Date().addingTimeInterval(15)
+        // The launcher reports through stdout as well as launch.log, so a
+        // failure can be described instead of guessed at.
+        if await waitForSupervisor(configuration: configuration) { return }
+
+        let attempt = result.combined.trimmingCharacters(in: .whitespacesAndNewlines)
+        throw NetCrackError.authorizationFailed(
+            RootExecutor.failureMessage(configuration: configuration, attempt: attempt)
+        )
+    }
+
+    /// Polls until the supervisor answers a real command, not just until a file
+    /// with the right name exists.
+    private static func waitForSupervisor(configuration: Configuration) async -> Bool {
+        let deadline = Date().addingTimeInterval(25)
         while Date() < deadline {
-            if FileManager.default.fileExists(atPath: heartbeat.path) {
-                // Confirm it really answers, not just that the file exists.
-                if await Self.probeSupervisor(configuration: configuration) { return }
+            if Self.heartbeatIsFresh(configuration: configuration),
+               await probeSupervisor(configuration: configuration) {
+                return true
             }
-            try await Task.sleep(nanoseconds: 200_000_000)
+            try? await Task.sleep(nanoseconds: 300_000_000)
         }
-        throw NetCrackError.authorizationFailed("The privileged helper did not start. Try again, or run `sudo tcpdump -i en0 -I` in Terminal to test your system.")
+        return false
     }
 
     /// When the app itself is root there is no dialog to show.
     private func startSupervisorDirectly() throws {
-        try RootExecutor.prepareSessionDirectory(configuration.sessionDirectory)
-        let daemonScript = configuration.sessionDirectory.appendingPathComponent("daemon.sh")
-        try RootExecutor.daemonSource.write(to: daemonScript, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: daemonScript.path)
-        RootExecutor.clearArtifacts(in: configuration.sessionDirectory)
+        let directory = configuration.sessionDirectory
+        try RootExecutor.prepareSessionDirectory(directory)
+        try RootExecutor.installLauncher(in: directory, configuration: configuration)
+        RootExecutor.clearArtifacts(in: directory)
 
+        let launcher = directory.appendingPathComponent("launch.sh")
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/sh")
         process.arguments = [
-            daemonScript.path,
-            configuration.sessionDirectory.path,
+            launcher.path,
+            directory.path,
+            "\(getuid())",
+            "\(getgid())",
             "\(Int(configuration.idleTimeout))",
             "\(Int(configuration.hardLifetime))"
         ]
@@ -222,13 +243,35 @@ actor RootExecutor {
         process.standardError = FileHandle.nullDevice
         process.standardInput = FileHandle.nullDevice
         try process.run()
+        process.waitUntilExit()
 
-        let heartbeat = configuration.sessionDirectory.appendingPathComponent("alive")
-        let deadline = Date().addingTimeInterval(5)
+        let deadline = Date().addingTimeInterval(10)
         while Date() < deadline {
-            if FileManager.default.fileExists(atPath: heartbeat.path) { return }
+            if RootExecutor.heartbeatIsFresh(configuration: configuration) { return }
             Thread.sleep(forTimeInterval: 0.1)
         }
+        throw NetCrackError.authorizationFailed(
+            RootExecutor.failureMessage(
+                configuration: configuration,
+                attempt: "launcher exited with \(process.terminationStatus) (running as root)"
+            )
+        )
+    }
+
+    private static func launcherCommand(
+        directory: URL,
+        launcher: URL,
+        configuration: Configuration
+    ) -> String {
+        [
+            "/bin/sh",
+            Formatters.shellQuoted(launcher.path),
+            Formatters.shellQuoted(directory.path),
+            "\(getuid())",
+            "\(getgid())",
+            "\(Int(configuration.idleTimeout))",
+            "\(Int(configuration.hardLifetime))"
+        ].joined(separator: " ")
     }
 
     private static func probeSupervisor(configuration: Configuration) async -> Bool {
@@ -249,6 +292,188 @@ actor RootExecutor {
         } catch {
             return false
         }
+    }
+
+    // MARK: - Helper installation
+
+    /// Copies the two shell scripts out of the app bundle and writes the
+    /// LaunchDaemon property list. All three live in the session directory so
+    /// the launcher — which runs as root, with no idea where the app is — has
+    /// everything it needs in one place.
+    private static func installLauncher(in directory: URL, configuration: Configuration) throws {
+        for name in helperScripts {
+            let source = try helperScript(named: name)
+            let destination = directory.appendingPathComponent("\(name).sh")
+            try source.write(to: destination, atomically: true, encoding: .utf8)
+            try FileManager.default.setAttributes(
+                [.posixPermissions: 0o755],
+                ofItemAtPath: destination.path
+            )
+        }
+
+        let plist = launchDaemonPlist(directory: directory, configuration: configuration)
+        let plistURL = directory.appendingPathComponent("\(helperLabel).plist")
+        try plist.write(to: plistURL, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o644],
+            ofItemAtPath: plistURL.path
+        )
+    }
+
+    private static func helperScript(named name: String) throws -> String {
+        var candidates: [URL] = []
+        if let url = Bundle.main.url(forResource: name, withExtension: "sh") {
+            candidates.append(url)
+        }
+        if let resources = Bundle.main.resourceURL {
+            candidates.append(resources.appendingPathComponent("\(name).sh"))
+        }
+        let executableDirectory = Bundle.main.executableURL?.deletingLastPathComponent()
+        if let executableDirectory {
+            candidates.append(executableDirectory.deletingLastPathComponent()
+                .appendingPathComponent("Resources/\(name).sh"))
+        }
+        for url in candidates {
+            if let text = try? String(contentsOf: url, encoding: .utf8), !text.isEmpty {
+                return text
+            }
+        }
+        throw NetCrackError.authorizationFailed(
+            "NetCrack's helper scripts (\(name).sh) are missing from the app bundle. "
+            + "The copy of NetCrack.app is incomplete — download it again."
+        )
+    }
+
+    private static func launchDaemonPlist(directory: URL, configuration: Configuration) -> String {
+        let daemon = directory.appendingPathComponent("daemon.sh").path
+        let log = directory.appendingPathComponent("daemon.log").path
+        func escape(_ value: String) -> String {
+            value
+                .replacingOccurrences(of: "&", with: "&amp;")
+                .replacingOccurrences(of: "<", with: "&lt;")
+                .replacingOccurrences(of: ">", with: "&gt;")
+        }
+        let arguments = [
+            "/bin/sh", daemon, directory.path,
+            "\(Int(configuration.idleTimeout))",
+            "\(Int(configuration.hardLifetime))",
+            "\(getuid())", "\(getgid())"
+        ]
+        let argumentXML = arguments
+            .map { "        <string>\(escape($0))</string>" }
+            .joined(separator: "\n")
+
+        return """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>Label</key>
+            <string>\(helperLabel)</string>
+            <key>ProgramArguments</key>
+            <array>
+        \(argumentXML)
+            </array>
+            <key>RunAtLoad</key>
+            <true/>
+            <key>KeepAlive</key>
+            <false/>
+            <key>ProcessType</key>
+            <string>Interactive</string>
+            <key>StandardOutPath</key>
+            <string>\(escape(log))</string>
+            <key>StandardErrorPath</key>
+            <string>\(escape(log))</string>
+        </dict>
+        </plist>
+        """
+    }
+
+    // MARK: - Diagnostics
+
+    private static func heartbeatIsFresh(configuration: Configuration) -> Bool {
+        let heartbeat = configuration.sessionDirectory.appendingPathComponent("alive")
+        guard let attributes = try? FileManager.default.attributesOfItem(atPath: heartbeat.path),
+              let modified = attributes[.modificationDate] as? Date else {
+            return false
+        }
+        return Date().timeIntervalSince(modified) < heartbeatFreshness
+    }
+
+    private static func failureMessage(configuration: Configuration, attempt: String) -> String {
+        let reason = launchOutcome(from: attempt)
+        let log = configuration.sessionDirectory.appendingPathComponent("launch.log").path
+        return """
+        The privileged helper did not start. \(reason)
+        The full log is at \(log) — Setup → Administrator helper can copy it.
+        """
+    }
+
+    /// Pulls the useful lines out of the launcher's own report.
+    static func launchOutcome(from output: String) -> String {
+        let interesting = output
+            .split(separator: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { line in
+                line.contains("launchd:") || line.contains("nohup:")
+                    || line.hasPrefix("RESULT=") || line.hasPrefix("FATAL")
+                    || line.contains("WARNING:") || line.contains("launchctl")
+            }
+        if interesting.isEmpty { return "The launcher produced no report." }
+        return interesting.joined(separator: " · ")
+    }
+
+    private static func diagnosticSummary(configuration: Configuration, attempt: String) -> String {
+        let outcome = launchOutcome(from: attempt)
+        let log = configuration.sessionDirectory.appendingPathComponent("launch.log").path
+        return "\(outcome) Log: \(log)"
+    }
+
+    /// Full report for the Setup sheet: directory state, both helper logs and
+    /// whether a LaunchDaemon is still registered.
+    static func diagnostics(configuration: Configuration, attempt: String = "") -> String {
+        let directory = configuration.sessionDirectory
+        let manager = FileManager.default
+        var report: [String] = []
+        report.append("NetCrack privileged helper")
+        report.append("app:        \(Bundle.main.bundlePath)")
+        report.append("session:    \(directory.path)")
+        report.append("effective:  uid \(getuid()), gid \(getgid())")
+        report.append("heartbeat:  \(heartbeatIsFresh(configuration: configuration) ? "fresh" : "missing or stale")")
+        report.append("daemon:     \(manager.fileExists(atPath: launchDaemonPath) ? "LaunchDaemon installed" : "no LaunchDaemon installed")")
+        if !attempt.isEmpty {
+            report.append("")
+            report.append("--- last attempt")
+            report.append(attempt.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        report.append("")
+        report.append("--- session directory")
+        if let entries = try? manager.contentsOfDirectory(atPath: directory.path), !entries.isEmpty {
+            for entry in entries.sorted() {
+                let path = directory.appendingPathComponent(entry).path
+                let attributes = try? manager.attributesOfItem(atPath: path)
+                let size = (attributes?[.size] as? NSNumber)?.intValue ?? 0
+                let owner = (attributes?[.ownerAccountID] as? NSNumber)?.intValue ?? -1
+                let permissions = (attributes?[.posixPermissions] as? NSNumber)?.intValue ?? 0
+                report.append("  \(String(permissions, radix: 8)) \(size) bytes uid=\(owner) \(entry)")
+            }
+        } else {
+            report.append("  (empty or unreadable)")
+        }
+        for name in ["launch.log", "daemon.log"] {
+            report.append("")
+            report.append("--- \(name) (tail)")
+            report.append(tail(directory.appendingPathComponent(name), lines: 60))
+        }
+        return report.joined(separator: "\n")
+    }
+
+    private static func tail(_ url: URL, lines: Int) -> String {
+        guard let text = try? String(contentsOf: url, encoding: .utf8), !text.isEmpty else {
+            return "(missing)"
+        }
+        let all = text.split(separator: "\n", omittingEmptySubsequences: false)
+        return all.suffix(lines).joined(separator: "\n")
     }
 
     // MARK: - Running commands
@@ -374,12 +599,7 @@ actor RootExecutor {
     // MARK: - Daemon liveness
 
     private func isDaemonAlive() -> Bool {
-        let heartbeat = configuration.sessionDirectory.appendingPathComponent("alive")
-        guard let attributes = try? FileManager.default.attributesOfItem(atPath: heartbeat.path),
-              let modified = attributes[.modificationDate] as? Date else {
-            return false
-        }
-        return Date().timeIntervalSince(modified) < RootExecutor.heartbeatFreshness
+        RootExecutor.heartbeatIsFresh(configuration: configuration)
     }
 
     // MARK: - File protocol internals
@@ -392,7 +612,10 @@ actor RootExecutor {
     private static func clearArtifacts(in directory: URL) {
         let manager = FileManager.default
         guard let entries = try? manager.contentsOfDirectory(atPath: directory.path) else { return }
-        for entry in entries where entry != "daemon.sh" {
+        // The launcher, its property list and the logs survive: the logs are the
+        // evidence the Setup sheet shows when a launch fails.
+        let keep: Set<String> = ["daemon.sh", "launch.sh", "\(helperLabel).plist", "launch.log", "daemon.log"]
+        for entry in entries where !keep.contains(entry) {
             try? manager.removeItem(at: directory.appendingPathComponent(entry))
         }
     }
@@ -494,88 +717,14 @@ actor RootExecutor {
             .replacingOccurrences(of: "\"", with: "\\\"")
     }
 
-    // MARK: - Supervisor script
+    // MARK: - Diagnostics snapshot
 
-    /// The root-side supervisor. POSIX sh only: macOS images do not ship with
-    /// Bash 4 features and we cannot rely on the user's shell configuration.
-    static let daemonSource = #"""
-    #!/bin/sh
-    # NetCrack privileged command supervisor.
-    # Usage: daemon.sh <session-dir> <idle-seconds> <lifetime-seconds>
-    # Started exactly once per authorisation via an administrator prompt.
-    DIR="$1"
-    IDLE_LIMIT="${2:-1800}"
-    LIFETIME="${3:-21600}"
-    HEARTBEAT="$DIR/alive"
-
-    [ -d "$DIR" ] || exit 1
-    umask 077
-    chmod 700 "$DIR" 2>/dev/null
-    : > "$HEARTBEAT" 2>/dev/null || exit 1
-
-    START=$(date +%s)
-    LAST_ACTIVITY=$START
-    LAST_TOUCH=0
-
-    while :; do
-      NOW=$(date +%s)
-
-      # The app removes the heartbeat to ask the supervisor to exit.
-      [ -f "$HEARTBEAT" ] || break
-
-      if [ $((NOW - LAST_TOUCH)) -ge 2 ]; then
-        : > "$HEARTBEAT" 2>/dev/null
-        LAST_TOUCH=$NOW
-      fi
-
-      for cmd in "$DIR"/*.cmd; do
-        [ -e "$cmd" ] || continue
-        base=${cmd##*/}
-        id=${base%.cmd}
-        run="$DIR/$id.run"
-        mv "$cmd" "$run" 2>/dev/null || continue
-        : > "$DIR/$id.out"
-        chmod 644 "$DIR/$id.out" 2>/dev/null
-        (
-          /bin/sh "$run" > "$DIR/$id.out" 2>&1
-          echo $? > "$DIR/$id.code"
-          chmod 644 "$DIR/$id.code" 2>/dev/null
-          rm -f "$run"
-        ) &
-        LAST_ACTIVITY=$NOW
-      done
-
-      for killfile in "$DIR"/*.kill; do
-        [ -e "$killfile" ] || continue
-        base=${killfile##*/}
-        id=${base%.kill}
-        SIG=$(sed -n '1p' "$killfile" 2>/dev/null)
-        PATTERN=$(sed -n '2p' "$killfile" 2>/dev/null)
-        [ -n "$SIG" ] || SIG=TERM
-        if [ -n "$PATTERN" ]; then
-          pkill -"$SIG" -f "$PATTERN" 2>/dev/null
-        fi
-        if [ -f "$DIR/$id.pid" ]; then
-          kill -"$SIG" "$(cat "$DIR/$id.pid")" 2>/dev/null
-        fi
-        mv "$killfile" "$DIR/$id.killed" 2>/dev/null
-        LAST_ACTIVITY=$NOW
-      done
-
-      # A running command keeps the session alive even if the app is idle.
-      for running in "$DIR"/*.run; do
-        [ -e "$running" ] || continue
-        LAST_ACTIVITY=$NOW
-        break
-      done
-
-      if [ $((NOW - LAST_ACTIVITY)) -gt "$IDLE_LIMIT" ]; then break; fi
-      if [ $((NOW - START)) -gt "$LIFETIME" ]; then break; fi
-
-      sleep 1
-    done
-
-    rm -f "$HEARTBEAT"
-    exit 0
-    """#
+    /// The report the Setup sheet shows. Collected on demand so it is always
+    /// current, even after a failed attempt.
+    func diagnosticsReport() -> String {
+        let attempt = lastAttempt.isEmpty
+            ? RootExecutor.diagnostics(configuration: configuration)
+            : lastAttempt
+        return attempt
+    }
 }

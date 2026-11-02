@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 
 /// Setup sheet: what is installed, and the one-click installer.
 @MainActor
@@ -37,6 +38,50 @@ final class SetupViewModel: ObservableObject {
     }
 
     var summary: String { report.summary }
+
+    // MARK: - Administrator helper
+
+    @Published private(set) var helperStatus: String = "Not checked yet"
+    @Published private(set) var helperDiagnostics: String = ""
+    @Published private(set) var helperBusy = false
+
+    /// Reads the helper's state and, with it, the launcher log — which is the
+    /// only place the reason for a failed launch is written down.
+    func refreshHelper() async {
+        let status = await RootExecutor.shared.status()
+        helperStatus = Self.describe(status)
+        helperDiagnostics = await RootExecutor.shared.diagnosticsReport()
+    }
+
+    func authorizeHelper() async {
+        guard !helperBusy else { return }
+        helperBusy = true
+        defer { helperBusy = false }
+        do {
+            try await RootExecutor.shared.authorize()
+        } catch {
+            self.error = UserFacingError(error)
+        }
+        await refreshHelper()
+    }
+
+    func copyHelperDiagnostics() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(helperDiagnostics, forType: .string)
+    }
+
+    private static func describe(_ status: RootExecutor.Status) -> String {
+        switch status {
+        case .authorized:
+            return "Running. Captures and installs will not ask for a password again."
+        case .authorizing:
+            return "Waiting for the password prompt…"
+        case .needsAuthorization:
+            return "Not started. NetCrack asks once, the first time it needs root."
+        case let .failed(message):
+            return message
+        }
+    }
 
     func refresh() async {
         report.isChecking = true

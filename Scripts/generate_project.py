@@ -33,6 +33,7 @@ FILE_TYPES = {
     ".plist": ("text.plist.xml", None),
     ".entitlements": ("text.plist.entitlements", None),
     ".txt": ("text", "resources"),
+    ".sh": ("text.script.sh", "resources"),
     ".md": ("net.daringfireball.markdown", None),
     ".xcassets": ("folder.assetcatalog", "resources"),
 }

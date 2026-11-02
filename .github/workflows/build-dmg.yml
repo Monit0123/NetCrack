@@ -27,6 +27,11 @@ jobs:
           xcodebuild -version
           xcode-select -p
 
+      # The privileged helper is shell, so it can be tested on the runner without
+      # a password prompt: everything downstream of the prompt is exercised.
+      - name: Test privileged helper protocol
+        run: sh Scripts/test-helper.sh
+
       - name: Build NetCrack (Release, ad-hoc signed)
         run: |
           set -o pipefail
@@ -89,11 +94,17 @@ jobs:
             echo "version: $(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist") (build $(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Contents/Info.plist"))"
             echo "signature:"; codesign -dv --verbose=2 "$APP" 2>&1 | sed -n '1,8p'
             codesign --verify --deep --strict "$APP" && echo "codesign --verify --deep --strict: OK"
+            echo "bundled helper scripts:"
+            ls -l "$APP/Contents/Resources/daemon.sh" "$APP/Contents/Resources/launch.sh"
             file "$APP/Contents/MacOS/NetCrack"
             echo "linked SDK: $(otool -l "$APP/Contents/MacOS/NetCrack" | grep -A3 LC_BUILD_VERSION | grep -m1 sdk | tr -s ' ')"
             echo "highest required macOS: $(otool -l "$APP/Contents/MacOS/NetCrack" | grep -A3 LC_BUILD_VERSION | grep -m1 minos | tr -s ' ')"
           } | tee dmg-verify.txt
           test -x "$APP/Contents/MacOS/NetCrack"
+          # Without these the app cannot authorise at all, so a missing copy is a
+          # build failure rather than a runtime surprise.
+          test -f "$APP/Contents/Resources/daemon.sh"
+          test -f "$APP/Contents/Resources/launch.sh"
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4

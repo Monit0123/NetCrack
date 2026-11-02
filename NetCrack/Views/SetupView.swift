@@ -25,6 +25,7 @@ struct SetupView: View {
                         )
                     }
                     aircrackWarning
+                    administratorSection
                     commandSheet
                     if viewModel.isInstalling || !viewModel.logs.isEmpty {
                         LogConsole(
@@ -48,6 +49,7 @@ struct SetupView: View {
             if viewModel.report.statuses.isEmpty {
                 await viewModel.refresh()
             }
+            await viewModel.refreshHelper()
         }
     }
 
@@ -166,6 +168,55 @@ struct SetupView: View {
             title: "aircrack-ng has no Apple Silicon bottle",
             message: "Homebrew has to compile it, which takes 5–15 minutes and uses a lot of CPU. It provides aireplay-ng (deauth), wash (WPS scan), the WPS engine and the fallback cracker. You can skip it and still use hashcat + hcxtools with the built-in radio."
         )
+    }
+
+    /// The privileged helper is the one component that can fail outside the
+    /// app's control (launchd refuses, the profile is managed, the prompt is
+    /// cancelled). Its log is shown here instead of being a mystery.
+    private var administratorSection: some View {
+        Card(title: "Administrator helper", systemImage: "lock.shield", tint: Theme.accent, padding: 14) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .top, spacing: 8) {
+                    Text(viewModel.helperStatus)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 8)
+                    if viewModel.helperBusy {
+                        ProgressView().controlSize(.small)
+                    }
+                    Button("Authorize…") {
+                        Task { await viewModel.authorizeHelper() }
+                    }
+                    .buttonStyle(PrimaryActionStyle(filled: false))
+                    .disabled(viewModel.helperBusy)
+
+                    Button {
+                        viewModel.copyHelperDiagnostics()
+                    } label: {
+                        Label("Copy log", systemImage: "doc.on.doc")
+                    }
+                    .buttonStyle(PrimaryActionStyle(filled: false))
+                }
+
+                DisclosureGroup("Helper log") {
+                    ScrollView {
+                        Text(viewModel.helperDiagnostics.isEmpty ? "No log yet." : viewModel.helperDiagnostics)
+                            .font(.system(size: 9.5, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(8)
+                    }
+                    .frame(height: 150)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(Color(nsColor: .textBackgroundColor).opacity(0.6))
+                    )
+                }
+                .font(.system(size: 10.5, weight: .medium))
+            }
+        }
     }
 
     private var commandSheet: some View {

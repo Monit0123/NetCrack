@@ -92,6 +92,9 @@ attempt_launchd() {
 # let the app install a property list.
 attempt_submit() {
   [ -x /bin/launchctl ] || { echo "submit: /bin/launchctl missing"; return 1; }
+  # A submitted system job has to be created by root; as anyone else launchctl
+  # would quietly put it in a user domain this supervisor cannot serve.
+  [ "$(id -u)" = "0" ] || { echo "submit: needs root, skipping"; return 1; }
 
   echo "submit: handing the supervisor to launchd without a plist"
   /bin/launchctl remove "$LABEL" >/dev/null 2>&1

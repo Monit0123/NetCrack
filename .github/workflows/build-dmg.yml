@@ -30,7 +30,7 @@ jobs:
       # The privileged helper is shell, so it can be tested on the runner without
       # a password prompt: everything downstream of the prompt is exercised.
       - name: Test privileged helper protocol
-        run: sh Scripts/test-helper.sh
+        run: sh Scripts/test-helper.sh 2>&1 | tee helper-test.log
 
       - name: Build NetCrack (Release, ad-hoc signed)
         run: |
@@ -184,6 +184,9 @@ jobs:
             echo
             echo "## Diagnostics"
             grep -nE "error:|BUILD FAILED|The following build commands failed|fatal error:|xcodebuild:" build.log 2>/dev/null | head -400
+            echo
+            echo "## Helper protocol test"
+            tail -60 helper-test.log 2>/dev/null
             echo
             echo "## DMG verification"
             cat dmg-verify.txt 2>/dev/null | head -40

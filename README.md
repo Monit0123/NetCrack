@@ -164,8 +164,9 @@ root-side launcher:  ~/Library/Application\ Support/NetCrack/rootsession/launch.
         │   1. writes /Library/LaunchDaemons/com.netcrack.helper.plist and
         │      bootstraps it — launchd owns the supervisor, so it cannot be
         │      reaped when the authorisation that started it goes away
-        │   2. if launchd refuses (managed Mac), falls back to a detached
-        │      nohup child
+        │   2. if that is refused (managed Mac), hands the job to launchd with
+        │      `launchctl submit` — no file in /Library/LaunchDaemons
+        │   3. last resort: a detached nohup child
         ▼
 root-side supervisor: daemon.sh — POSIX sh, `alive` heartbeat every 2 s
         │
@@ -176,7 +177,7 @@ app drops `<id>.cmd` files into the folder, reads `<id>.out` / `<id>.code`
             sudo-capable Homebrew installs — all without another prompt
 ```
 
-Both attempts are logged to `rootsession/launch.log`, and the supervisor logs
+All three attempts are logged to `rootsession/launch.log`, and the supervisor logs
 everything it runs to `rootsession/daemon.log`. If a launch fails, that log is
 what the error message quotes and what **Setup → Administrator helper → Helper
 log** shows — no guessing.
@@ -432,7 +433,7 @@ Every message below is raised by the app with the same wording.
 | *The wordlist could not be read* | Path moved/deleted | Crack → *Bundled top-10k* |
 | *No handshake yet — keep capturing* | 0 hashes in the pcap; **not an error** | Wait for a client to connect, or deauth on an external adapter |
 | *hashcat found no compute device* | Metal backend unavailable (some VMs) | Enable *Force hashcat (--force)*, or run on the host |
-| *The privileged helper did not start* | Neither launchd nor the fallback produced a heartbeat; the message quotes the launcher's own reason | **Setup → Administrator helper** shows `launch.log` and `daemon.log`; **Copy log** puts them on the clipboard. Usual causes: a managed Mac that blocks `/Library/LaunchDaemons`, a cancelled/denied prompt, or an app copied somewhere macOS will not run a daemon from |
+| *The privileged helper did not start* | None of the three launch attempts produced a heartbeat; the message quotes the launcher's own reason | **Setup → Administrator helper** shows `launch.log` and `daemon.log`; **Copy log** puts them on the clipboard. Usual causes: a managed Mac that blocks `/Library/LaunchDaemons`, a cancelled/denied prompt, or an app copied somewhere macOS will not run a daemon from |
 | *Administrator authorisation was declined* | You pressed Cancel | Nothing was changed; retry when ready |
 | *WPS … locked* | AP locked WPS after failures | Wait, or use the PMKID path |
 | *This hashcat build does not support mode 22000* | hashcat older than 6.2.6 | `brew upgrade hashcat` |

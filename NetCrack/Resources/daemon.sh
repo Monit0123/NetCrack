@@ -143,5 +143,8 @@ if [ -f "$PLIST" ]; then
   rm -f "$PLIST"
   ( /bin/launchctl bootout "system/$LABEL" >/dev/null 2>&1 & )
 fi
+# A supervisor handed over with `launchctl submit` has no property list, so the
+# job is removed by label instead. Harmless when there is no such job.
+( /bin/launchctl remove "$LABEL" >/dev/null 2>&1 & )
 
 exit 0

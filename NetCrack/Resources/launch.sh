@@ -87,6 +87,30 @@ attempt_launchd() {
   return 1
 }
 
+# `launchctl submit` is deprecated but still present, and unlike bootstrap it
+# needs no file in /Library/LaunchDaemons. Useful when a managed Mac refuses to
+# let the app install a property list.
+attempt_submit() {
+  [ -x /bin/launchctl ] || { echo "submit: /bin/launchctl missing"; return 1; }
+
+  echo "submit: handing the supervisor to launchd without a plist"
+  /bin/launchctl remove "$LABEL" >/dev/null 2>&1
+  if ! /bin/launchctl submit -l "$LABEL" -o "$DAEMON_LOG" -e "$DAEMON_LOG" -- \
+    /bin/sh "$DAEMON" "$DIR" "$IDLE_LIMIT" "$LIFETIME" "$OWNER_UID" "$OWNER_GID"; then
+    echo "submit: launchctl submit failed"
+    return 1
+  fi
+
+  if wait_for_heartbeat 60; then
+    echo "submit: helper is alive"
+    return 0
+  fi
+
+  echo "submit: no heartbeat appeared within 15 s"
+  /bin/launchctl remove "$LABEL" >/dev/null 2>&1
+  return 1
+}
+
 attempt_nohup() {
   echo "nohup: starting a detached supervisor"
   rm -f "$PLIST"
@@ -119,6 +143,8 @@ main() {
   MODE=""
   if attempt_launchd; then
     MODE=launchd
+  elif attempt_submit; then
+    MODE=submit
   elif attempt_nohup; then
     MODE=nohup
   fi
